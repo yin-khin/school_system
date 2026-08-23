@@ -40,18 +40,18 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-600 to-blue-800 p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 lg:p-8">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-8 text-blue-500">
           <div className="bg-white rounded-2xl p-4 shadow-xl mb-4">
             <GraduationCap className="w-12 h-12 text-primary-600" />
           </div>
-          <h1 className="text-3xl font-bold text-white">SchoolPro</h1>
-          <p className="text-primary-200 mt-1">School Management System</p>
+          <h1 className="text-3xl font-bold ">SchoolMS</h1>
+          <p className=" mt-1">School Management System</p>
         </div>
 
         {/* Login card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8">
+        <div className="bg-white rounded-2xl  p-2">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
           <p className="text-gray-500 text-sm mb-6">Login with your email and password</p>
 
