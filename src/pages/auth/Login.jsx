@@ -114,7 +114,7 @@ const Login = () => {
           </form>
 
           {/* Test Login Options */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+          {/* <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
             <p className="font-medium mb-3 text-gray-700">🔑 Test Login (Click to fill):</p>
             <div className="space-y-2">
               <button
@@ -132,7 +132,7 @@ const Login = () => {
                 test@school.com / test123
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
