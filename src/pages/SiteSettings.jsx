@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Image, Pencil, Plus, Save, Trash2 } from "lucide-react";
-import { siteAPI } from "../api";
+import { siteAPI, assetUrl } from "../api";
 
 const emptySlide = {
   schoolName: "",
@@ -132,7 +132,7 @@ const SiteSettings = () => {
                   src={
                     slide.heroImage.startsWith("http")
                       ? slide.heroImage
-                      : `http://localhost:5000/uploads/${slide.heroImage}`
+                      : assetUrl(slide.heroImage)
                   }
                   alt={slide.schoolName}
                   className="w-full h-full object-cover"
