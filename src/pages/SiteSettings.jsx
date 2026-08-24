@@ -107,14 +107,14 @@ const SiteSettings = () => {
             Manage up to 4 Hero slides shown on the user frontend.
           </p>
         </div>
-        <button
+        {/* <button
           type="button"
           className="btn-primary"
           onClick={startAdd}
           disabled={slides.length >= 4}
         >
           <Plus className="w-4 h-4 mr-1" /> Add Hero
-        </button>
+        </button> */}
       </div>
       {message && (
         <div

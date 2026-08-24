@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import schoolstrus from "../../../school.jpg"
 import {
   LayoutDashboard,
   Users,
@@ -107,7 +108,8 @@ const Layout = () => {
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-primary-700">
           <div className="flex items-center gap-2">
-            <GraduationCap className="w-8 h-8" />
+            {/* <GraduationCap className="w-8 h-8" /> */}
+            <img src={schoolstrus} alt="School Logo" className="w-10 h-10  rounded-sm" />
             <div>
               <h1 className="text-lg font-bold leading-tight">School</h1>
               <p className="text-xs text-primary-300">Management System</p>
