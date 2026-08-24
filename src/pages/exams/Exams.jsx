@@ -1,22 +1,31 @@
-import { useEffect, useState } from 'react';
-import { Plus, Search, Pencil, Trash2, FileText } from 'lucide-react';
-import { examAPI, classAPI, subjectAPI } from '../../api';
-import Modal from '../../components/common/Modal';
-import Table from '../../components/common/Table';
-import { formatDate, statusColor } from '../../utils/helpers';
+import { useEffect, useState } from "react";
+import { Plus, Search, Pencil, Trash2, FileText } from "lucide-react";
+import { examAPI, classAPI, subjectAPI, academicYearAPI } from "../../api";
+import Modal from "../../components/common/Modal";
+import Table from "../../components/common/Table";
+import { formatDate, statusColor } from "../../utils/helpers";
 
-const ExamForm = ({ initialData, classes, subjects, onSubmit, onClose }) => {
+const ExamForm = ({
+  initialData,
+  academicYears,
+  classes,
+  subjects,
+  loadError,
+  onSubmit,
+  onClose,
+}) => {
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    class_id: initialData?.class_id || '',
-    subject_id: initialData?.subject_id || '',
-    exam_date: initialData?.exam_date || '',
-    start_time: initialData?.start_time || '08:00',
-    end_time: initialData?.end_time || '10:00',
-    room: initialData?.room || '',
+    name: initialData?.name || "",
+    academic_year_id: initialData?.academic_year_id || "",
+    class_id: initialData?.class_id || "",
+    subject_id: initialData?.subject_id || "",
+    exam_date: initialData?.exam_date || "",
+    start_time: initialData?.start_time || "08:00",
+    end_time: initialData?.end_time || "10:00",
+    room: initialData?.room || "",
     total_marks: initialData?.total_marks || 100,
     pass_marks: initialData?.pass_marks || 40,
-    status: initialData?.status || 'scheduled',
+    status: initialData?.status || "scheduled",
   });
 
   const handleChange = (e) => {
@@ -31,52 +40,144 @@ const ExamForm = ({ initialData, classes, subjects, onSubmit, onClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {loadError && <p className="text-sm text-red-600">{loadError}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Exam Name *</label>
-          <input type="text" name="name" className="input" value={formData.name} onChange={handleChange} required />
+          <input
+            type="text"
+            name="name"
+            className="input"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label className="label">Academic Year *</label>
+          <select
+            name="academic_year_id"
+            className="input"
+            value={formData.academic_year_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">
+              {academicYears.length
+                ? "Select Academic Year"
+                : "No academic years found"}
+            </option>
+            {academicYears.map((year) => (
+              <option key={year.id} value={year.id}>
+                {year.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="label">Class</label>
-          <select name="class_id" className="input" value={formData.class_id} onChange={handleChange}>
-            <option value="">Select Class</option>
-            {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select
+            name="class_id"
+            className="input"
+            value={formData.class_id}
+            onChange={handleChange}
+          >
+            <option value="">
+              {classes.length ? "Select Class" : "No classes found"}
+            </option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
         <div>
           <label className="label">Subject</label>
-          <select name="subject_id" className="input" value={formData.subject_id} onChange={handleChange}>
-            <option value="">Select Subject</option>
-            {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          <select
+            name="subject_id"
+            className="input"
+            value={formData.subject_id}
+            onChange={handleChange}
+          >
+            <option value="">
+              {subjects.length ? "Select Subject" : "No subjects found"}
+            </option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
           </select>
         </div>
         <div>
           <label className="label">Exam Date</label>
-          <input type="date" name="exam_date" className="input" value={formData.exam_date} onChange={handleChange} />
+          <input
+            type="date"
+            name="exam_date"
+            className="input"
+            value={formData.exam_date}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Start Time</label>
-          <input type="time" name="start_time" className="input" value={formData.start_time} onChange={handleChange} />
+          <input
+            type="time"
+            name="start_time"
+            className="input"
+            value={formData.start_time}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">End Time</label>
-          <input type="time" name="end_time" className="input" value={formData.end_time} onChange={handleChange} />
+          <input
+            type="time"
+            name="end_time"
+            className="input"
+            value={formData.end_time}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Room</label>
-          <input type="text" name="room" className="input" value={formData.room} onChange={handleChange} />
+          <input
+            type="text"
+            name="room"
+            className="input"
+            value={formData.room}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Total Marks</label>
-          <input type="number" name="total_marks" className="input" value={formData.total_marks} onChange={handleChange} />
+          <input
+            type="number"
+            name="total_marks"
+            className="input"
+            value={formData.total_marks}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Pass Marks</label>
-          <input type="number" name="pass_marks" className="input" value={formData.pass_marks} onChange={handleChange} />
+          <input
+            type="number"
+            name="pass_marks"
+            className="input"
+            value={formData.pass_marks}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Status</label>
-          <select name="status" className="input" value={formData.status} onChange={handleChange}>
+          <select
+            name="status"
+            className="input"
+            value={formData.status}
+            onChange={handleChange}
+          >
             <option value="scheduled">Scheduled</option>
             <option value="ongoing">Ongoing</option>
             <option value="completed">Completed</option>
@@ -85,8 +186,12 @@ const ExamForm = ({ initialData, classes, subjects, onSubmit, onClose }) => {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn-primary">{initialData ? 'Update Exam' : 'Add Exam'}</button>
+        <button type="button" className="btn-secondary" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn-primary">
+          {initialData ? "Update Exam" : "Add Exam"}
+        </button>
       </div>
     </form>
   );
@@ -96,8 +201,10 @@ const Exams = () => {
   const [exams, setExams] = useState([]);
   const [classes, setClasses] = useState([]);
   const [subjects, setSubjects] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [loadError, setLoadError] = useState("");
+  const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
 
@@ -107,17 +214,41 @@ const Exams = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError("");
     try {
-      const [examsRes, classesRes, subjectsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         examAPI.getAll({ limit: 100, search }),
         classAPI.getAll({ limit: 100 }),
-        subjectAPI.getAll({ limit: 100 })
+        subjectAPI.getAll({ limit: 100 }),
+        academicYearAPI.getAll(),
       ]);
-      setExams(examsRes.data.data);
-      setClasses(classesRes.data.data);
-      setSubjects(subjectsRes.data.data);
+      const [examsResult, classesResult, subjectsResult, academicYearsResult] =
+        results;
+      const failedLists = [];
+
+      if (examsResult.status === "fulfilled")
+        setExams(examsResult.value.data.data || []);
+      else failedLists.push("exams");
+      if (classesResult.status === "fulfilled")
+        setClasses(classesResult.value.data.data || []);
+      else failedLists.push("classes");
+      if (subjectsResult.status === "fulfilled")
+        setSubjects(subjectsResult.value.data.data || []);
+      else failedLists.push("subjects");
+      if (academicYearsResult.status === "fulfilled")
+        setAcademicYears(academicYearsResult.value.data.data || []);
+      else failedLists.push("academic years");
+
+      if (failedLists.length > 0) {
+        setLoadError(
+          `Could not load: ${failedLists.join(", ")}. Check the API server and login session.`,
+        );
+      }
     } catch (error) {
-      console.error('Load exams error:', error);
+      console.error("Load exams error:", error);
+      setLoadError(
+        "Could not load exam data. Check that the API server is running.",
+      );
     } finally {
       setLoading(false);
     }
@@ -128,9 +259,9 @@ const Exams = () => {
       await examAPI.create(data);
       setShowModal(false);
       loadData();
-      alert('Exam created successfully');
+      alert("Exam created successfully");
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating exam');
+      alert(error.response?.data?.message || "Error creating exam");
     }
   };
 
@@ -140,9 +271,9 @@ const Exams = () => {
       setShowModal(false);
       setEditingExam(null);
       loadData();
-      alert('Exam updated successfully');
+      alert("Exam updated successfully");
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating exam');
+      alert(error.response?.data?.message || "Error updating exam");
     }
   };
 
@@ -151,26 +282,26 @@ const Exams = () => {
       try {
         await examAPI.delete(exam.id);
         loadData();
-        alert('Exam deleted successfully');
+        alert("Exam deleted successfully");
       } catch (error) {
-        alert(error.response?.data?.message || 'Error deleting exam');
+        alert(error.response?.data?.message || "Error deleting exam");
       }
     }
   };
 
   const handleAction = (action, row) => {
-    if (action === 'edit') {
+    if (action === "edit") {
       setEditingExam(row);
       setShowModal(true);
-    } else if (action === 'delete') {
+    } else if (action === "delete") {
       handleDelete(row);
     }
   };
 
   const columns = [
     {
-      header: 'Exam',
-      accessor: 'name',
+      header: "Exam",
+      accessor: "name",
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center">
@@ -184,22 +315,34 @@ const Exams = () => {
       ),
     },
     {
-      header: 'Subject',
-      accessor: 'Subject',
-      render: (row) => row.Subject?.name || '-',
+      header: "Subject",
+      accessor: "Subject",
+      render: (row) => row.Subject?.name || "-",
     },
-    { header: 'Date', accessor: 'exam_date', render: (row) => formatDate(row.exam_date) },
     {
-      header: 'Time',
-      accessor: 'start_time',
-      render: (row) => `${row.start_time || '--'} - ${row.end_time || '--'}`,
+      header: "Date",
+      accessor: "exam_date",
+      render: (row) => formatDate(row.exam_date),
     },
-    { header: 'Room', accessor: 'room', render: (row) => row.room || '-' },
-    { header: 'Marks', accessor: 'total_marks', render: (row) => `${row.total_marks || '-'}` },
     {
-      header: 'Status',
-      accessor: 'status',
-      render: (row) => <span className={statusColor[row.status] || 'badge-gray'}>{row.status}</span>,
+      header: "Time",
+      accessor: "start_time",
+      render: (row) => `${row.start_time || "--"} - ${row.end_time || "--"}`,
+    },
+    { header: "Room", accessor: "room", render: (row) => row.room || "-" },
+    {
+      header: "Marks",
+      accessor: "total_marks",
+      render: (row) => `${row.total_marks || "-"}`,
+    },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (row) => (
+        <span className={statusColor[row.status] || "badge-gray"}>
+          {row.status}
+        </span>
+      ),
     },
   ];
 
@@ -218,10 +361,20 @@ const Exams = () => {
               placeholder="Search exams..."
               className="input pl-9"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); if (e.target.value === '' || e.target.value.length > 2) loadData(); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (e.target.value === "" || e.target.value.length > 2)
+                  loadData();
+              }}
             />
           </div>
-          <button className="btn-primary" onClick={() => { setEditingExam(null); setShowModal(true); }}>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              setEditingExam(null);
+              setShowModal(true);
+            }}
+          >
             <Plus className="w-4 h-4 mr-1" /> Add Exam
           </button>
         </div>
@@ -233,8 +386,17 @@ const Exams = () => {
           data={exams}
           loading={loading}
           actions={[
-            { name: 'edit', icon: <Pencil className="w-4 h-4" />, title: 'Edit' },
-            { name: 'delete', icon: <Trash2 className="w-4 h-4" />, title: 'Delete', color: 'danger' },
+            {
+              name: "edit",
+              icon: <Pencil className="w-4 h-4" />,
+              title: "Edit",
+            },
+            {
+              name: "delete",
+              icon: <Trash2 className="w-4 h-4" />,
+              title: "Delete",
+              color: "danger",
+            },
           ]}
           onAction={handleAction}
         />
@@ -242,15 +404,23 @@ const Exams = () => {
 
       <Modal
         isOpen={showModal}
-        onClose={() => { setShowModal(false); setEditingExam(null); }}
-        title={editingExam ? 'Edit Exam' : 'Add New Exam'}
+        onClose={() => {
+          setShowModal(false);
+          setEditingExam(null);
+        }}
+        title={editingExam ? "Edit Exam" : "Add New Exam"}
       >
         <ExamForm
           initialData={editingExam}
+          academicYears={academicYears}
           classes={classes}
           subjects={subjects}
+          loadError={loadError}
           onSubmit={editingExam ? handleUpdate : handleCreate}
-          onClose={() => { setShowModal(false); setEditingExam(null); }}
+          onClose={() => {
+            setShowModal(false);
+            setEditingExam(null);
+          }}
         />
       </Modal>
     </div>

@@ -1,19 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Plus, Search, Pencil, Trash2, School } from 'lucide-react';
-import { classAPI, teacherAPI } from '../../api';
-import Modal from '../../components/common/Modal';
-import Table from '../../components/common/Table';
-import { statusColor } from '../../utils/helpers';
+import { useEffect, useState } from "react";
+import { Plus, Search, Pencil, Trash2, School } from "lucide-react";
+import { classAPI, teacherAPI, academicYearAPI } from "../../api";
+import Modal from "../../components/common/Modal";
+import Table from "../../components/common/Table";
+import { statusColor } from "../../utils/helpers";
 
-const ClassForm = ({ initialData, teachers, onSubmit, onClose }) => {
+const ClassForm = ({
+  initialData,
+  teachers,
+  academicYears,
+  onSubmit,
+  onClose,
+}) => {
   const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    code: initialData?.code || '',
-    class_teacher_id: initialData?.class_teacher_id || '',
-    room: initialData?.room || '',
+    name: initialData?.name || "",
+    code: initialData?.code || "",
+    academic_year_id: initialData?.academic_year_id || "",
+    class_teacher_id: initialData?.class_teacher_id || "",
+    room: initialData?.room || "",
     capacity: initialData?.capacity || 40,
-    description: initialData?.description || '',
-    status: initialData?.status || 'active',
+    description: initialData?.description || "",
+    status: initialData?.status || "active",
   });
 
   const handleChange = (e) => {
@@ -31,32 +38,87 @@ const ClassForm = ({ initialData, teachers, onSubmit, onClose }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Class Name *</label>
-          <input type="text" name="name" className="input" value={formData.name} onChange={handleChange} required />
+          <input
+            type="text"
+            name="name"
+            className="input"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
           <label className="label">Class Code *</label>
-          <input type="text" name="code" className="input" value={formData.code} onChange={handleChange} required />
+          <input
+            type="text"
+            name="code"
+            className="input"
+            value={formData.code}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
           <label className="label">Class Teacher</label>
-          <select name="class_teacher_id" className="input" value={formData.class_teacher_id} onChange={handleChange}>
+          <select
+            name="class_teacher_id"
+            className="input"
+            value={formData.class_teacher_id}
+            onChange={handleChange}
+          >
             <option value="">Select Teacher</option>
             {teachers.map((t) => (
-              <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>
+              <option key={t.id} value={t.id}>
+                {t.first_name} {t.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Academic Year *</label>
+          <select
+            name="academic_year_id"
+            className="input"
+            value={formData.academic_year_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Academic Year</option>
+            {academicYears.map((year) => (
+              <option key={year.id} value={year.id}>
+                {year.name}
+              </option>
             ))}
           </select>
         </div>
         <div>
           <label className="label">Room</label>
-          <input type="text" name="room" className="input" value={formData.room} onChange={handleChange} />
+          <input
+            type="text"
+            name="room"
+            className="input"
+            value={formData.room}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Capacity</label>
-          <input type="number" name="capacity" className="input" value={formData.capacity} onChange={handleChange} />
+          <input
+            type="number"
+            name="capacity"
+            className="input"
+            value={formData.capacity}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <label className="label">Status</label>
-          <select name="status" className="input" value={formData.status} onChange={handleChange}>
+          <select
+            name="status"
+            className="input"
+            value={formData.status}
+            onChange={handleChange}
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -64,11 +126,21 @@ const ClassForm = ({ initialData, teachers, onSubmit, onClose }) => {
       </div>
       <div>
         <label className="label">Description</label>
-        <textarea name="description" className="input" rows="2" value={formData.description} onChange={handleChange} />
+        <textarea
+          name="description"
+          className="input"
+          rows="2"
+          value={formData.description}
+          onChange={handleChange}
+        />
       </div>
       <div className="flex justify-end gap-2 pt-4">
-        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="submit" className="btn-primary">{initialData ? 'Update Class' : 'Add Class'}</button>
+        <button type="button" className="btn-secondary" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn-primary">
+          {initialData ? "Update Class" : "Add Class"}
+        </button>
       </div>
     </form>
   );
@@ -77,14 +149,16 @@ const ClassForm = ({ initialData, teachers, onSubmit, onClose }) => {
 const Classes = () => {
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
 
   useEffect(() => {
     loadClasses();
     loadTeachers();
+    loadAcademicYears();
   }, []);
 
   const loadClasses = async () => {
@@ -93,9 +167,18 @@ const Classes = () => {
       const res = await classAPI.getAll({ limit: 100, search });
       setClasses(res.data.data);
     } catch (error) {
-      console.error('Load classes error:', error);
+      console.error("Load classes error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAcademicYears = async () => {
+    try {
+      const res = await academicYearAPI.getAll();
+      setAcademicYears(res.data.data || []);
+    } catch (error) {
+      console.error("Load academic years error:", error);
     }
   };
 
@@ -104,18 +187,24 @@ const Classes = () => {
       const res = await teacherAPI.getAll({ limit: 100 });
       setTeachers(res.data.data);
     } catch (error) {
-      console.error('Load teachers error:', error);
+      console.error("Load teachers error:", error);
     }
   };
 
   const handleCreate = async (data) => {
     try {
-      await classAPI.create(data);
+      await classAPI.create({
+        ...data,
+        academic_year_id: parseInt(data.academic_year_id, 10),
+        class_teacher_id: data.class_teacher_id
+          ? parseInt(data.class_teacher_id, 10)
+          : null,
+      });
       setShowModal(false);
       loadClasses();
-      alert('Class created successfully');
+      alert("Class created successfully");
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating class');
+      alert(error.response?.data?.message || "Error creating class");
     }
   };
 
@@ -125,37 +214,39 @@ const Classes = () => {
       setShowModal(false);
       setEditingClass(null);
       loadClasses();
-      alert('Class updated successfully');
+      alert("Class updated successfully");
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating class');
+      alert(error.response?.data?.message || "Error updating class");
     }
   };
 
   const handleDelete = async (classData) => {
-    if (window.confirm(`Are you sure you want to delete class ${classData.name}?`)) {
+    if (
+      window.confirm(`Are you sure you want to delete class ${classData.name}?`)
+    ) {
       try {
         await classAPI.delete(classData.id);
         loadClasses();
-        alert('Class deleted successfully');
+        alert("Class deleted successfully");
       } catch (error) {
-        alert(error.response?.data?.message || 'Error deleting class');
+        alert(error.response?.data?.message || "Error deleting class");
       }
     }
   };
 
   const handleAction = (action, row) => {
-    if (action === 'edit') {
+    if (action === "edit") {
       setEditingClass(row);
       setShowModal(true);
-    } else if (action === 'delete') {
+    } else if (action === "delete") {
       handleDelete(row);
     }
   };
 
   const columns = [
     {
-      header: 'Class',
-      accessor: 'name',
+      header: "Class",
+      accessor: "name",
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
@@ -169,21 +260,28 @@ const Classes = () => {
       ),
     },
     {
-      header: 'Class Teacher',
-      accessor: 'Teacher',
-      render: (row) => row.Teacher ? `${row.Teacher.first_name} ${row.Teacher.last_name}` : '-',
+      header: "Class Teacher",
+      accessor: "Teacher",
+      render: (row) =>
+        row.Teacher
+          ? `${row.Teacher.first_name} ${row.Teacher.last_name}`
+          : "-",
     },
-    { header: 'Room', accessor: 'room', render: (row) => row.room || '-' },
+    { header: "Room", accessor: "room", render: (row) => row.room || "-" },
     {
-      header: 'Students',
-      accessor: 'Students',
-      render: (row) => row.Students ? row.Students.length : 0,
+      header: "Students",
+      accessor: "Students",
+      render: (row) => (row.Students ? row.Students.length : 0),
     },
-    { header: 'Capacity', accessor: 'capacity' },
+    { header: "Capacity", accessor: "capacity" },
     {
-      header: 'Status',
-      accessor: 'status',
-      render: (row) => <span className={statusColor[row.status] || 'badge-gray'}>{row.status}</span>,
+      header: "Status",
+      accessor: "status",
+      render: (row) => (
+        <span className={statusColor[row.status] || "badge-gray"}>
+          {row.status}
+        </span>
+      ),
     },
   ];
 
@@ -202,10 +300,20 @@ const Classes = () => {
               placeholder="Search classes..."
               className="input pl-9"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); if (e.target.value === '' || e.target.value.length > 2) loadClasses(); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (e.target.value === "" || e.target.value.length > 2)
+                  loadClasses();
+              }}
             />
           </div>
-          <button className="btn-primary" onClick={() => { setEditingClass(null); setShowModal(true); }}>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              setEditingClass(null);
+              setShowModal(true);
+            }}
+          >
             <Plus className="w-4 h-4 mr-1" /> Add Class
           </button>
         </div>
@@ -217,8 +325,17 @@ const Classes = () => {
           data={classes}
           loading={loading}
           actions={[
-            { name: 'edit', icon: <Pencil className="w-4 h-4" />, title: 'Edit' },
-            { name: 'delete', icon: <Trash2 className="w-4 h-4" />, title: 'Delete', color: 'danger' },
+            {
+              name: "edit",
+              icon: <Pencil className="w-4 h-4" />,
+              title: "Edit",
+            },
+            {
+              name: "delete",
+              icon: <Trash2 className="w-4 h-4" />,
+              title: "Delete",
+              color: "danger",
+            },
           ]}
           onAction={handleAction}
         />
@@ -226,14 +343,21 @@ const Classes = () => {
 
       <Modal
         isOpen={showModal}
-        onClose={() => { setShowModal(false); setEditingClass(null); }}
-        title={editingClass ? 'Edit Class' : 'Add New Class'}
+        onClose={() => {
+          setShowModal(false);
+          setEditingClass(null);
+        }}
+        title={editingClass ? "Edit Class" : "Add New Class"}
       >
         <ClassForm
           initialData={editingClass}
           teachers={teachers}
+          academicYears={academicYears}
           onSubmit={editingClass ? handleUpdate : handleCreate}
-          onClose={() => { setShowModal(false); setEditingClass(null); }}
+          onClose={() => {
+            setShowModal(false);
+            setEditingClass(null);
+          }}
         />
       </Modal>
     </div>

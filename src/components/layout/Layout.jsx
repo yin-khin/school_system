@@ -25,6 +25,7 @@ import {
   Search,
   ChevronDown,
   Database,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { notificationAPI } from "../../api";
@@ -50,6 +51,7 @@ const navItems = [
   { name: "Users", path: "/users", icon: UserCog },
   { name: "Reports", path: "/reports", icon: FileText },
   { name: "Backup", path: "/backup", icon: Database },
+  { name: "Site Settings", path: "/site-settings", icon: Settings },
 ];
 
 const mobileNavItems = [

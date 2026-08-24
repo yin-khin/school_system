@@ -1,19 +1,20 @@
-import { useState } from 'react';
-import { Download, Upload, Database, Loader2 } from 'lucide-react';
-import { backupAPI } from '../../api';
+import { useRef, useState } from "react";
+import { Download, Upload, Database, Loader2 } from "lucide-react";
+import { backupAPI } from "../../api";
 
 const BackupManager = () => {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Export and download
   const handleExport = async () => {
     setExporting(true);
-    setError('');
+    setError("");
     setMessage(null);
     try {
       const res = await backupAPI.exportData();
@@ -22,10 +23,10 @@ const BackupManager = () => {
       if (res.data.success) {
         // Create downloadable file
         const jsonString = JSON.stringify(res.data.data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        const blob = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const date = new Date().toISOString().split('T')[0];
+        const a = document.createElement("a");
+        const date = new Date().toISOString().split("T")[0];
         a.href = url;
         a.download = `school-backup-${date}.json`;
         document.body.appendChild(a);
@@ -34,15 +35,15 @@ const BackupManager = () => {
         URL.revokeObjectURL(url);
 
         setMessage({
-          type: 'success',
-          text: `Backup downloaded! ${data.counts.total} total records exported.`
+          type: "success",
+          text: `Backup downloaded! ${data.counts.total} total records exported.`,
         });
       } else {
-        setError('Export failed');
+        setError("Export failed");
       }
     } catch (err) {
-      console.error('Export error:', err);
-      setError(err.response?.data?.message || 'Export failed');
+      console.error("Export error:", err);
+      setError(err.response?.data?.message || "Export failed");
     } finally {
       setExporting(false);
     }
@@ -53,7 +54,8 @@ const BackupManager = () => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
     setFile(selectedFile);
-    setError('');
+    setPreview(null);
+    setError("");
     setMessage(null);
 
     const reader = new FileReader();
@@ -62,7 +64,8 @@ const BackupManager = () => {
         const json = JSON.parse(event.target.result);
         setPreview(json);
       } catch (err) {
-        setError('Invalid JSON file. Please select a valid backup file.');
+        setFile(null);
+        setError("Invalid JSON file. Please select a valid backup file.");
         setPreview(null);
       }
     };
@@ -72,32 +75,37 @@ const BackupManager = () => {
   // Import data
   const handleImport = async () => {
     if (!file || !preview) {
-      setError('Please select a valid backup file first');
+      setError("Please select a valid backup file first");
       return;
     }
 
-    if (!window.confirm('This will import the backup data into your database. Continue?')) return;
+    if (
+      !window.confirm(
+        "This will import the backup data into your database. Continue?",
+      )
+    )
+      return;
 
     setImporting(true);
-    setError('');
+    setError("");
     setMessage(null);
     try {
-      const res = await backupAPI.importData({ data: preview });
+      const res = await backupAPI.importData({ data: preview.data || preview });
       if (res.data.success) {
         setMessage({
-          type: 'success',
-          text: res.data.message || 'Import completed successfully'
+          type: "success",
+          text: res.data.message || "Import completed successfully",
         });
         setFile(null);
         setPreview(null);
         // Reset file input
-        e.target.value = '';
+        if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
-        setError(res.data.message || 'Import failed');
+        setError(res.data.message || "Import failed");
       }
     } catch (err) {
-      console.error('Import error:', err);
-      setError(err.response?.data?.message || 'Import failed');
+      console.error("Import error:", err);
+      setError(err.response?.data?.message || "Import failed");
     } finally {
       setImporting(false);
     }
@@ -127,7 +135,9 @@ const BackupManager = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Database Backup</h1>
-          <p className="text-gray-500 text-sm">Export and import the entire school database</p>
+          <p className="text-gray-500 text-sm">
+            Export and import the entire school database
+          </p>
         </div>
       </div>
 
@@ -143,16 +153,37 @@ const BackupManager = () => {
             <div>
               <h2 className="font-semibold text-lg">Export Database</h2>
               <p className="text-sm text-gray-500">
-                Download all records (students, teachers, classes, fees, etc.) as a JSON backup file.
+                Download all records (students, teachers, classes, fees, etc.)
+                as a JSON backup file.
               </p>
             </div>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
-            <p className="text-xs font-medium text-gray-600 mb-2">Included data:</p>
+            <p className="text-xs font-medium text-gray-600 mb-2">
+              Included data:
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {['Students', 'Teachers', 'Parents', 'Classes', 'Subjects', 'Attendance', 'Exams', 'Marks', 'Fees', 'Payments', 'Books', 'Users', 'Timetables', 'Assignments'].map((item) => (
-                <span key={item} className="text-xs text-gray-600 flex items-center gap-1">
+              {[
+                "Students",
+                "Teachers",
+                "Parents",
+                "Classes",
+                "Subjects",
+                "Attendance",
+                "Exams",
+                "Marks",
+                "Fees",
+                "Payments",
+                "Books",
+                "Users",
+                "Timetables",
+                "Assignments",
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="text-xs text-gray-600 flex items-center gap-1"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                   {item}
                 </span>
@@ -197,6 +228,7 @@ const BackupManager = () => {
                 type="file"
                 accept=".json,application/json"
                 className="input"
+                ref={fileInputRef}
                 onChange={handleFileChange}
               />
             </div>
@@ -208,11 +240,14 @@ const BackupManager = () => {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {preview.counts &&
-                    Object.entries(preview.counts).filter(([key]) => key !== 'total').slice(0, 10).map(([key, value]) => (
-                      <span key={key} className="badge-success text-xs">
-                        {key.replace('_', ' ')}: {value}
-                      </span>
-                    ))}
+                    Object.entries(preview.counts)
+                      .filter(([key]) => key !== "total")
+                      .slice(0, 10)
+                      .map(([key, value]) => (
+                        <span key={key} className="badge-success text-xs">
+                          {key.replace("_", " ")}: {value}
+                        </span>
+                      ))}
                   {preview.counts && (
                     <span className="badge-info text-xs">
                       Total: {preview.counts.total}
@@ -221,7 +256,8 @@ const BackupManager = () => {
                 </div>
                 {preview.meta && (
                   <p className="text-xs text-gray-500 mt-2">
-                    Exported: {preview.meta.exportedAt} | Version: {preview.meta.version}
+                    Exported: {preview.meta.exportedAt} | Version:{" "}
+                    {preview.meta.version}
                   </p>
                 )}
               </div>
@@ -230,14 +266,16 @@ const BackupManager = () => {
             {!preview && (
               <div className="bg-gray-50 rounded-lg p-8 text-center">
                 <Upload className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Select a backup file to preview its contents</p>
+                <p className="text-sm text-gray-500">
+                  Select a backup file to preview its contents
+                </p>
               </div>
             )}
 
             <button
               className="btn-success w-full py-3"
               onClick={handleImport}
-              disabled={importing || !file}
+              disabled={importing || !file || !preview}
             >
               {importing ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
