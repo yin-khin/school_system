@@ -57,9 +57,14 @@ const SiteSettings = () => {
     setMessage("");
     try {
       const payload = new FormData();
-      Object.entries(form).forEach(([key, value]) =>
-        payload.append(key, value || ""),
-      );
+      Object.entries(form).forEach(([key, value]) => {
+        const val = value || "";
+        // Do not resend a stored base64 photo (huge string) or an empty value
+        // back to the server for heroImage; the API preserves the existing image.
+        if (key === "heroImage" && (val === "" || val.startsWith("data:")))
+          return;
+        payload.append(key, val);
+      });
       if (heroFile) payload.set("heroImage", heroFile);
       if (editingId) await siteAPI.update(editingId, payload);
       else await siteAPI.create(payload);
@@ -130,6 +135,7 @@ const SiteSettings = () => {
               {slide.heroImage ? (
                 <img
                   src={
+                    slide.heroImage.startsWith("data:") ||
                     slide.heroImage.startsWith("http")
                       ? slide.heroImage
                       : assetUrl(slide.heroImage)
@@ -225,9 +231,13 @@ const SiteSettings = () => {
           <input
             name="heroImage"
             className="input"
-            value={form.heroImage || ""}
+            value={
+              form.heroImage && form.heroImage.startsWith("data:")
+                ? ""
+                : form.heroImage || ""
+            }
             onChange={handleChange}
-            placeholder="Optional URL or existing filename"
+            placeholder="Optional external URL (or pick a file above)"
           />
         </div>
         <div className="flex justify-end gap-2">
