@@ -137,24 +137,6 @@ const toISODate = (d) => {
     return { start: toISODate(startDate), end: toISODate(endDate) };
   };
 
-  const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
-
-  const getWeekdayDates = (startStr, endStr) => {
-    const dates = [];
-    const cur = new Date(startStr);
-    const end = new Date(endStr);
-    while (cur <= end) {
-      if (!isWeekend(cur)) {
-        dates.push({
-          iso: toISODate(cur),
-          label: String(cur.getDate()),
-        });
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return dates;
-  };
-
   const loadMonthlyView = async () => {
     if (!selectedClass) return;
     setMonthlyLoading(true);
@@ -247,21 +229,10 @@ const toISODate = (d) => {
   };
 
   // ----- Monthly view helpers -----
-  const statusCellClass = {
-    present: "bg-green-100 text-green-700",
-    absent: "bg-red-100 text-red-700",
-    late: "bg-yellow-100 text-yellow-700",
-    excused: "bg-blue-100 text-blue-700",
-  };
-  const statusLetter = { present: "P", absent: "A", late: "L", excused: "E" };
-
   const monthlyRange =
     viewMode === "monthly"
       ? computeMonthRange(endMonth, durationMonths)
       : null;
-  const monthlyDateCols = monthlyRange
-    ? getWeekdayDates(monthlyRange.start, monthlyRange.end)
-    : [];
 
   const monthlyStatusMap = {};
   monthlyRecords.forEach((rec) => {
@@ -468,14 +439,6 @@ const toISODate = (d) => {
                   <th className="table-header sticky left-8 bg-gray-50 z-10 min-w-[150px] text-left">
                     Student
                   </th>
-                  {monthlyDateCols.map((col) => (
-                    <th
-                      key={col.iso}
-                      className="table-header text-center px-0.5 py-2 min-w-[28px]"
-                    >
-                      {col.label}
-                    </th>
-                  ))}
                   <th className="table-header text-center px-1 text-green-700">
                     P
                   </th>
@@ -505,25 +468,6 @@ const toISODate = (d) => {
                           {student.roll_number || student.student_id}
                         </span>
                       </td>
-                      {monthlyDateCols.map((col) => {
-                        const s = monthlyStatusMap[student.id]?.[col.iso];
-                        return (
-                          <td
-                            key={col.iso}
-                            className="px-0.5 py-1 text-center"
-                          >
-                            <span
-                              className={`inline-block w-5 h-5 leading-5 rounded text-center font-semibold ${
-                                s
-                                  ? statusCellClass[s]
-                                  : "bg-gray-100 text-gray-300"
-                              }`}
-                            >
-                              {s ? statusLetter[s] : "•"}
-                            </span>
-                          </td>
-                        );
-                      })}
                       <td className="px-1 py-1 text-center font-semibold text-green-600">
                         {sum.present}
                       </td>
@@ -545,7 +489,7 @@ const toISODate = (d) => {
                 {students.length === 0 && !monthlyLoading && (
                   <tr>
                     <td
-                      colSpan={2 + monthlyDateCols.length + 5}
+                      colSpan={7}
                       className="table-cell text-center text-gray-500 py-6"
                     >
                       {loading ? "Loading..." : "No students in this class"}
