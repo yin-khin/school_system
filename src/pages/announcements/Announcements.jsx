@@ -17,9 +17,11 @@ const AnnouncementForm = ({ initialData, onSubmit, onClose }) => {
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(
+  const [photoPreview, setPhotoPreview] = useState(() =>
     initialData?.photo
-      ? `${API_URL.replace("/api", "")}/uploads/${initialData.photo}`
+      ? initialData.photo.startsWith("data:")
+        ? initialData.photo
+        : `${API_URL.replace("/api", "")}/uploads/${initialData.photo}`
       : null,
   );
 
@@ -270,7 +272,11 @@ const Announcements = () => {
         <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center overflow-hidden">
           {row.photo ? (
             <img
-              src={`${API_URL.replace("/api", "")}/uploads/${row.photo}`}
+              src={
+                row.photo.startsWith("data:")
+                  ? row.photo
+                  : `${API_URL.replace("/api", "")}/uploads/${row.photo}`
+              }
               alt={row.title}
               className="w-full h-full object-cover"
             />
