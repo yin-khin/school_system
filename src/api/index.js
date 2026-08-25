@@ -72,6 +72,7 @@ export const attendanceAPI = {
   getAll: (params) => axios.get("/attendance", { params }),
   getByClassAndDate: (classId, date) =>
     axios.get(`/attendance/class/${classId}/date/${date}`),
+  getRange: (params) => axios.get("/attendance/range", { params }),
   create: (data) => axios.post("/attendance", data),
   update: (id, data) => axios.put(`/attendance/${id}`, data),
   delete: (id) => axios.delete(`/attendance/${id}`),
