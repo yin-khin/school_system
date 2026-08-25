@@ -147,10 +147,7 @@ const toISODate = (d) => {
       if (!isWeekend(cur)) {
         dates.push({
           iso: toISODate(cur),
-          label: cur.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          }),
+          label: String(cur.getDate()),
         });
       }
       cur.setDate(cur.getDate() + 1);
