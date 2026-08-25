@@ -5,6 +5,7 @@ import {
   UserCog,
   Wallet,
   ClipboardList,
+  CalendarDays,
   Printer,
   X,
 } from "lucide-react";
@@ -45,6 +46,12 @@ const reportTypes = [
     icon: ClipboardList,
     description: "Exam performance results",
   },
+  {
+    name: "attendance",
+    label: "Attendance Report",
+    icon: CalendarDays,
+    description: "Daily student attendance records",
+  },
 ];
 
 const Reports = () => {
@@ -53,7 +60,12 @@ const Reports = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState([]);
-  const [filters, setFilters] = useState({ class_id: "", status: "" });
+  const [filters, setFilters] = useState({
+    class_id: "",
+    status: "",
+    start_date: "",
+    end_date: "",
+  });
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedFee, setSelectedFee] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -87,6 +99,8 @@ const Reports = () => {
       const params = { ...filters };
       if (!params.class_id) delete params.class_id;
       if (!params.status) delete params.status;
+      if (!params.start_date) delete params.start_date;
+      if (!params.end_date) delete params.end_date;
 
       let res;
       switch (activeReport) {
@@ -109,6 +123,20 @@ const Reports = () => {
           res = await reportAPI.getAcademic(params);
           setData(res.data.data);
           setSummary({ total: res.data.data.length });
+          break;
+        case "attendance":
+          res = await reportAPI.getAttendance(params);
+          const attendanceData = res.data.data || [];
+          setData(attendanceData);
+          setSummary({
+            total: attendanceData.length,
+            present: attendanceData.filter(
+              (r) => r.status === "present",
+            ).length,
+            absent: attendanceData.filter((r) => r.status === "absent").length,
+            late: attendanceData.filter((r) => r.status === "late").length,
+            excused: attendanceData.filter((r) => r.status === "excused").length,
+          });
           break;
         default:
           break;
@@ -359,6 +387,41 @@ const Reports = () => {
             ),
           },
         ];
+      case "attendance":
+        return [
+          {
+            header: "Date",
+            accessor: "date",
+            render: (row) => formatDate(row.date),
+          },
+          {
+            header: "Student",
+            accessor: "Student",
+            render: (row) =>
+              row.Student
+                ? getFullName(row.Student.first_name, row.Student.last_name)
+                : "-",
+          },
+          {
+            header: "Class",
+            accessor: "Class",
+            render: (row) => row.Class?.name || "-",
+          },
+          {
+            header: "Status",
+            accessor: "status",
+            render: (row) => (
+              <span className={statusColor[row.status] || "badge-gray"}>
+                {row.status}
+              </span>
+            ),
+          },
+          {
+            header: "Remark",
+            accessor: "remark",
+            render: (row) => row.remark || "-",
+          },
+        ];
       default:
         return [];
     }
@@ -437,22 +500,55 @@ const Reports = () => {
               ))}
             </select>
           </div>
-          <div>
-            <label className="label">Status</label>
-            <select
-              className="input"
-              value={filters.status}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, status: e.target.value }))
-              }
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+          {activeReport === "attendance" ? (
+            <>
+              <div>
+                <label className="label">Start Date</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={filters.start_date}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      start_date: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="label">End Date</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={filters.end_date}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      end_date: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="label">Status</label>
+              <select
+                className="input"
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, status: e.target.value }))
+                }
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+          )}
           {activeReport === "fees" && (
             <div>
               <label className="label">Search Student Name</label>
