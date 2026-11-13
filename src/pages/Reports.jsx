@@ -1,3 +1,676 @@
+// import { useEffect, useState } from "react";
+// import {
+//   FileText,
+//   Users,
+//   UserCog,
+//   Wallet,
+//   ClipboardList,
+//   CalendarDays,
+//   Printer,
+//   X,
+// } from "lucide-react";
+// import { reportAPI, classAPI } from "../api";
+// import Table from "../components/common/Table";
+// import {
+//   formatDate,
+//   formatCurrency,
+//   getFullName,
+//   statusColor,
+//   getInitialsFromName,
+// } from "../utils/helpers";
+
+// const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+// const reportTypes = [
+//   {
+//     name: "students",
+//     label: "Student Report",
+//     icon: Users,
+//     description: "List of all students",
+//   },
+//   {
+//     name: "teachers",
+//     label: "Teacher Report",
+//     icon: UserCog,
+//     description: "List of all teachers",
+//   },
+//   {
+//     name: "fees",
+//     label: "Fee Report",
+//     icon: Wallet,
+//     description: "Fee collection summary",
+//   },
+//   {
+//     name: "academic",
+//     label: "Academic Report",
+//     icon: ClipboardList,
+//     description: "Exam performance results",
+//   },
+//   {
+//     name: "attendance",
+//     label: "Attendance Report",
+//     icon: CalendarDays,
+//     description: "Daily student attendance records",
+//   },
+// ];
+
+// const Reports = () => {
+//   const [activeReport, setActiveReport] = useState("students");
+//   const [data, setData] = useState([]);
+//   const [summary, setSummary] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [classes, setClasses] = useState([]);
+//   const [filters, setFilters] = useState({
+//     class_id: "",
+//     status: "",
+//     start_date: "",
+//     end_date: "",
+//   });
+//   const [studentSearch, setStudentSearch] = useState("");
+//   const [selectedFee, setSelectedFee] = useState(null);
+//   const [showInvoice, setShowInvoice] = useState(false);
+
+//   useEffect(() => {
+//     loadClasses();
+//   }, []);
+
+//   useEffect(() => {
+//     if (activeReport) loadReport();
+//   }, [activeReport, filters]);
+
+//   useEffect(() => {
+//     setStudentSearch("");
+//     setSelectedFee(null);
+//     setShowInvoice(false);
+//   }, [activeReport]);
+
+//   const loadClasses = async () => {
+//     try {
+//       const res = await classAPI.getAll({ limit: 100 });
+//       setClasses(res.data.data);
+//     } catch (error) {
+//       console.error("Load classes error:", error);
+//     }
+//   };
+
+//   const loadReport = async () => {
+//     setLoading(true);
+//     try {
+//       const params = { ...filters };
+//       if (!params.class_id) delete params.class_id;
+//       if (!params.status) delete params.status;
+//       if (!params.start_date) delete params.start_date;
+//       if (!params.end_date) delete params.end_date;
+
+//       let res;
+//       switch (activeReport) {
+//         case "students":
+//           res = await reportAPI.getStudents(params);
+//           setData(res.data.data);
+//           setSummary({ total: res.data.data.length });
+//           break;
+//         case "teachers":
+//           res = await reportAPI.getTeachers(params);
+//           setData(res.data.data);
+//           setSummary({ total: res.data.data.length });
+//           break;
+//         case "fees":
+//           res = await reportAPI.getFees(params);
+//           setData(res.data.data.fees || []);
+//           setSummary(res.data.data.summary);
+//           break;
+//         case "academic":
+//           res = await reportAPI.getAcademic(params);
+//           setData(res.data.data);
+//           setSummary({ total: res.data.data.length });
+//           break;
+//         case "attendance":
+//           res = await reportAPI.getAttendance(params);
+//           const attendanceData = res.data.data || [];
+//           setData(attendanceData);
+//           setSummary({
+//             total: attendanceData.length,
+//             present: attendanceData.filter(
+//               (r) => r.status === "present",
+//             ).length,
+//             absent: attendanceData.filter((r) => r.status === "absent").length,
+//             late: attendanceData.filter((r) => r.status === "late").length,
+//             excused: attendanceData.filter((r) => r.status === "excused").length,
+//           });
+//           break;
+//         default:
+//           break;
+//       }
+//     } catch (error) {
+//       console.error("Load report error:", error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const filteredData =
+//     activeReport === "fees" && studentSearch.trim()
+//       ? data.filter((fee) => {
+//           const studentName = fee.Student
+//             ? getFullName(fee.Student.first_name, fee.Student.last_name)
+//             : "";
+//           return studentName
+//             .toLowerCase()
+//             .includes(studentSearch.trim().toLowerCase());
+//         })
+//       : data;
+
+//   const handleGenerateReport = () => {
+//     if (activeReport === "fees") {
+//       if (!selectedFee) {
+//         alert("Please click a student name to select an invoice first");
+//         return;
+//       }
+//       setShowInvoice(true);
+//       return;
+//     }
+//     loadReport();
+//   };
+
+//   const printInvoice = () => window.print();
+
+//   const getColumns = () => {
+//     switch (activeReport) {
+//       case "students":
+//         return [
+//           {
+//             header: "Student",
+//             accessor: "first_name",
+//             render: (row) => (
+//               <div className="flex items-center gap-2">
+//                 <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden">
+//                   {row.photo ? (
+//                     <img
+//                       src={`${API_URL.replace("/api", "")}/uploads/${row.photo}`}
+//                       alt={row.first_name}
+//                       className="w-full h-full object-cover"
+//                     />
+//                   ) : (
+//                     getInitialsFromName(row.first_name, row.last_name)
+//                   )}
+//                 </div>
+//                 <div>
+//                   <p className="font-medium">
+//                     {getFullName(row.first_name, row.last_name)}
+//                   </p>
+//                   <p className="text-xs text-gray-500">{row.student_id}</p>
+//                 </div>
+//               </div>
+//             ),
+//           },
+//           {
+//             header: "Gender",
+//             accessor: "gender",
+//             render: (row) => <span className="capitalize">{row.gender}</span>,
+//           },
+//           {
+//             header: "Class",
+//             accessor: "Class",
+//             render: (row) => row.Class?.name || "-",
+//           },
+//           {
+//             header: "Phone",
+//             accessor: "phone",
+//             render: (row) => row.phone || "-",
+//           },
+//           {
+//             header: "Admission",
+//             accessor: "admission_date",
+//             render: (row) => formatDate(row.admission_date),
+//           },
+//           {
+//             header: "Status",
+//             accessor: "status",
+//             render: (row) => (
+//               <span className={statusColor[row.status] || "badge-gray"}>
+//                 {row.status}
+//               </span>
+//             ),
+//           },
+//         ];
+//       case "teachers":
+//         return [
+//           {
+//             header: "Teacher",
+//             accessor: "first_name",
+//             render: (row) => (
+//               <div className="flex items-center gap-2">
+//                 <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden">
+//                   {row.photo ? (
+//                     <img
+//                       src={`${API_URL.replace("/api", "")}/uploads/${row.photo}`}
+//                       alt={row.first_name}
+//                       className="w-full h-full object-cover"
+//                     />
+//                   ) : (
+//                     getInitialsFromName(row.first_name, row.last_name)
+//                   )}
+//                 </div>
+//                 <div>
+//                   <p className="font-medium">
+//                     {getFullName(row.first_name, row.last_name)}
+//                   </p>
+//                   <p className="text-xs text-gray-500">{row.teacher_id}</p>
+//                 </div>
+//               </div>
+//             ),
+//           },
+//           {
+//             header: "Specialization",
+//             accessor: "specialization",
+//             render: (row) => row.specialization || "-",
+//           },
+//           {
+//             header: "Department",
+//             accessor: "department",
+//             render: (row) => row.department || "-",
+//           },
+//           {
+//             header: "Phone",
+//             accessor: "phone",
+//             render: (row) => row.phone || "-",
+//           },
+//           {
+//             header: "Classes",
+//             accessor: "Classes",
+//             render: (row) => row.Classes?.length || 0,
+//           },
+//           {
+//             header: "Status",
+//             accessor: "status",
+//             render: (row) => (
+//               <span className={statusColor[row.status] || "badge-gray"}>
+//                 {row.status}
+//               </span>
+//             ),
+//           },
+//         ];
+//       case "fees":
+//         return [
+//           {
+//             header: "Invoice",
+//             accessor: "invoice_no",
+//             render: (row) => (
+//               <div>
+//                 <p className="font-medium">{row.invoice_no}</p>
+//                 <p className="text-xs text-gray-500 capitalize">
+//                   {row.fee_type}
+//                 </p>
+//               </div>
+//             ),
+//           },
+//           {
+//             header: "Student",
+//             accessor: "Student",
+//             render: (row) =>
+//               row.Student ? (
+//                 <button
+//                   type="button"
+//                   className={`font-medium hover:text-primary-600 ${selectedFee?.id === row.id ? "text-primary-600 underline" : ""}`}
+//                   onClick={() => setSelectedFee(row)}
+//                 >
+//                   {getFullName(row.Student.first_name, row.Student.last_name)}
+//                 </button>
+//               ) : (
+//                 "-"
+//               ),
+//           },
+//           {
+//             header: "Amount",
+//             accessor: "amount",
+//             render: (row) => formatCurrency(row.amount),
+//           },
+//           {
+//             header: "Paid",
+//             accessor: "paid_amount",
+//             render: (row) => (
+//               <span className="text-green-600">
+//                 {formatCurrency(row.paid_amount)}
+//               </span>
+//             ),
+//           },
+//           {
+//             header: "Due",
+//             accessor: "amount",
+//             render: (row) =>
+//               formatCurrency(
+//                 parseFloat(row.amount) -
+//                   parseFloat(row.discount || 0) -
+//                   parseFloat(row.paid_amount || 0),
+//               ),
+//           },
+//           {
+//             header: "Status",
+//             accessor: "status",
+//             render: (row) => (
+//               <span className={statusColor[row.status] || "badge-gray"}>
+//                 {row.status}
+//               </span>
+//             ),
+//           },
+//         ];
+//       case "academic":
+//         return [
+//           {
+//             header: "Student",
+//             accessor: "Student",
+//             render: (row) =>
+//               row.Student
+//                 ? getFullName(row.Student.first_name, row.Student.last_name)
+//                 : "-",
+//           },
+//           {
+//             header: "Exam",
+//             accessor: "Exam",
+//             render: (row) => row.Exam?.name || "-",
+//           },
+//           {
+//             header: "Subject",
+//             accessor: "Subject",
+//             render: (row) => row.Subject?.name || "-",
+//           },
+//           {
+//             header: "Marks",
+//             accessor: "marks_obtained",
+//             render: (row) => `${row.marks_obtained} / ${row.total_marks}`,
+//           },
+//           {
+//             header: "Grade",
+//             accessor: "grade",
+//             render: (row) => (
+//               <span className="font-bold">{row.grade || "-"}</span>
+//             ),
+//           },
+//         ];
+//       case "attendance":
+//         return [
+//           {
+//             header: "Date",
+//             accessor: "date",
+//             render: (row) => formatDate(row.date),
+//           },
+//           {
+//             header: "Student",
+//             accessor: "Student",
+//             render: (row) =>
+//               row.Student
+//                 ? getFullName(row.Student.first_name, row.Student.last_name)
+//                 : "-",
+//           },
+//           {
+//             header: "Class",
+//             accessor: "Class",
+//             render: (row) => row.Class?.name || "-",
+//           },
+//           {
+//             header: "Status",
+//             accessor: "status",
+//             render: (row) => (
+//               <span className={statusColor[row.status] || "badge-gray"}>
+//                 {row.status}
+//               </span>
+//             ),
+//           },
+//           {
+//             header: "Remark",
+//             accessor: "remark",
+//             render: (row) => row.remark || "-",
+//           },
+//         ];
+//       default:
+//         return [];
+//     }
+//   };
+
+//   const summaryCards = summary ? (
+//     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+//       {Object.entries(summary).map(([key, value]) => (
+//         <div key={key} className="card p-4">
+//           <p className="text-sm text-gray-500 capitalize">
+//             {key.replace("_", " ")}
+//           </p>
+//           <p className="text-xl font-bold">
+//             {typeof value === "number" && activeReport === "fees"
+//               ? formatCurrency(value)
+//               : value}
+//           </p>
+//         </div>
+//       ))}
+//     </div>
+//   ) : null;
+
+//   return (
+//     <div className="space-y-4">
+//       <div>
+//         <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+//         <p className="text-gray-500 text-sm">
+//           Generate and view school reports
+//         </p>
+//       </div>
+
+//       {/* Report type selector */}
+//       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+//         {reportTypes.map((report) => (
+//           <button
+//             key={report.name}
+//             onClick={() => setActiveReport(report.name)}
+//             className={`card p-4 text-left transition-colors ${
+//               activeReport === report.name
+//                 ? "ring-2 ring-primary-500"
+//                 : "hover:shadow-md"
+//             }`}
+//           >
+//             <div className="flex items-start gap-3">
+//               <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
+//                 <report.icon className="w-5 h-5" />
+//               </div>
+//               <div>
+//                 <p className="font-medium text-sm">{report.label}</p>
+//                 <p className="text-xs text-gray-500 mt-1">
+//                   {report.description}
+//                 </p>
+//               </div>
+//             </div>
+//           </button>
+//         ))}
+//       </div>
+
+//       {/* Filters */}
+//       <div className="card p-4">
+//         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+//           <div>
+//             <label className="label">Class</label>
+//             <select
+//               className="input"
+//               value={filters.class_id}
+//               onChange={(e) =>
+//                 setFilters((prev) => ({ ...prev, class_id: e.target.value }))
+//               }
+//             >
+//               <option value="">All Classes</option>
+//               {classes.map((c) => (
+//                 <option key={c.id} value={c.id}>
+//                   {c.name}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+//           {activeReport === "attendance" ? (
+//             <>
+//               <div>
+//                 <label className="label">Start Date</label>
+//                 <input
+//                   type="date"
+//                   className="input"
+//                   value={filters.start_date}
+//                   onChange={(e) =>
+//                     setFilters((prev) => ({
+//                       ...prev,
+//                       start_date: e.target.value,
+//                     }))
+//                   }
+//                 />
+//               </div>
+//               <div>
+//                 <label className="label">End Date</label>
+//                 <input
+//                   type="date"
+//                   className="input"
+//                   value={filters.end_date}
+//                   onChange={(e) =>
+//                     setFilters((prev) => ({
+//                       ...prev,
+//                       end_date: e.target.value,
+//                     }))
+//                   }
+//                 />
+//               </div>
+//             </>
+//           ) : (
+//             <div>
+//               <label className="label">Status</label>
+//               <select
+//                 className="input"
+//                 value={filters.status}
+//                 onChange={(e) =>
+//                   setFilters((prev) => ({ ...prev, status: e.target.value }))
+//                 }
+//               >
+//                 <option value="">All Status</option>
+//                 <option value="active">Active</option>
+//                 <option value="inactive">Inactive</option>
+//                 <option value="paid">Paid</option>
+//                 <option value="pending">Pending</option>
+//               </select>
+//             </div>
+//           )}
+//           {activeReport === "fees" && (
+//             <div>
+//               <label className="label">Search Student Name</label>
+//               <input
+//                 type="search"
+//                 className="input"
+//                 placeholder="Type student name..."
+//                 value={studentSearch}
+//                 onChange={(e) => setStudentSearch(e.target.value)}
+//               />
+//             </div>
+//           )}
+//           <div className="flex items-end">
+//             <button
+//               className="btn-primary w-full"
+//               onClick={handleGenerateReport}
+//             >
+//               <FileText className="w-4 h-4 mr-1" /> Generate Report
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {summaryCards}
+
+//       <div className="card overflow-hidden">
+//         <Table columns={getColumns()} data={filteredData} loading={loading} />
+//       </div>
+
+//       {showInvoice && selectedFee && (
+//         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+//           <div className="mx-auto max-w-2xl rounded-lg bg-white p-8 print-invoice">
+//             <div className="mb-6 flex items-start justify-between border-b pb-4">
+//               <div>
+//                 <h2 className="text-2xl font-bold text-gray-900">
+//                   School Fee Invoice
+//                 </h2>
+//                 <p className="text-sm text-gray-500">
+//                   Invoice: {selectedFee.invoice_no}
+//                 </p>
+//               </div>
+//               <button
+//                 type="button"
+//                 className="text-gray-500 hover:text-gray-900 print:hidden"
+//                 onClick={() => setShowInvoice(false)}
+//                 aria-label="Close invoice"
+//               >
+//                 <X className="h-5 w-5" />
+//               </button>
+//             </div>
+//             <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
+//               <div>
+//                 <p className="text-gray-500">Student</p>
+//                 <p className="font-semibold">
+//                   {getFullName(
+//                     selectedFee.Student?.first_name,
+//                     selectedFee.Student?.last_name,
+//                   )}
+//                 </p>
+//               </div>
+//               <div>
+//                 <p className="text-gray-500">Student ID</p>
+//                 <p className="font-semibold">
+//                   {selectedFee.Student?.student_id || "-"}
+//                 </p>
+//               </div>
+//               <div>
+//                 <p className="text-gray-500">Fee Type</p>
+//                 <p className="font-semibold capitalize">
+//                   {selectedFee.fee_type}
+//                 </p>
+//               </div>
+//               <div>
+//                 <p className="text-gray-500">Date</p>
+//                 <p className="font-semibold">
+//                   {formatDate(selectedFee.created_at)}
+//                 </p>
+//               </div>
+//             </div>
+//             <div className="border-y py-4 text-sm">
+//               <div className="flex justify-between">
+//                 <span>Amount</span>
+//                 <span>{formatCurrency(selectedFee.amount)}</span>
+//               </div>
+//               <div className="flex justify-between">
+//                 <span>Discount</span>
+//                 <span>{formatCurrency(selectedFee.discount || 0)}</span>
+//               </div>
+//               <div className="mt-3 flex justify-between font-semibold">
+//                 <span>Paid</span>
+//                 <span>{formatCurrency(selectedFee.paid_amount || 0)}</span>
+//               </div>
+//               <div className="flex justify-between text-lg font-bold">
+//                 <span>Balance Due</span>
+//                 <span>
+//                   {formatCurrency(
+//                     parseFloat(selectedFee.amount) -
+//                       parseFloat(selectedFee.discount || 0) -
+//                       parseFloat(selectedFee.paid_amount || 0),
+//                   )}
+//                 </span>
+//               </div>
+//             </div>
+//             <div className="mt-6 flex justify-end print:hidden">
+//               <button
+//                 type="button"
+//                 className="btn-primary"
+//                 onClick={printInvoice}
+//               >
+//                 <Printer className="mr-1 h-4 w-4" /> Print Invoice
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Reports;
+
+
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -7,6 +680,7 @@ import {
   ClipboardList,
   CalendarDays,
   Printer,
+  Download,
   X,
 } from "lucide-react";
 import { reportAPI, classAPI } from "../api";
@@ -54,6 +728,18 @@ const reportTypes = [
   },
 ];
 
+// Status values each report can be filtered by (must match the database enums)
+const statusOptions = {
+  students: ["active", "inactive", "graduated", "transferred", "suspended"],
+  teachers: ["active", "inactive", "on_leave", "resigned"],
+  fees: ["pending", "partial", "paid", "overdue", "cancelled"],
+};
+
+const csvCell = (value) => {
+  const text = value === null || value === undefined ? "" : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
 const Reports = () => {
   const [activeReport, setActiveReport] = useState("students");
   const [data, setData] = useState([]);
@@ -69,6 +755,8 @@ const Reports = () => {
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedFee, setSelectedFee] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     loadClasses();
@@ -82,7 +770,16 @@ const Reports = () => {
     setStudentSearch("");
     setSelectedFee(null);
     setShowInvoice(false);
+    setNotice("");
+    setLoadError("");
   }, [activeReport]);
+
+  // Switch report and clear the status filter in one update, because a status
+  // that is valid for one report (e.g. "paid") is invalid for another.
+  const selectReport = (name) => {
+    setActiveReport(name);
+    setFilters((prev) => ({ ...prev, status: "" }));
+  };
 
   const loadClasses = async () => {
     try {
@@ -95,6 +792,7 @@ const Reports = () => {
 
   const loadReport = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const params = { ...filters };
       if (!params.class_id) delete params.class_id;
@@ -141,8 +839,18 @@ const Reports = () => {
         default:
           break;
       }
+      return true;
     } catch (error) {
       console.error("Load report error:", error);
+      setData([]);
+      setSummary(null);
+      setLoadError(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          error.message ||
+          "Could not load the report",
+      );
+      return false;
     } finally {
       setLoading(false);
     }
@@ -160,19 +868,123 @@ const Reports = () => {
         })
       : data;
 
-  const handleGenerateReport = () => {
-    if (activeReport === "fees") {
-      if (!selectedFee) {
-        alert("Please click a student name to select an invoice first");
-        return;
-      }
-      setShowInvoice(true);
-      return;
-    }
-    loadReport();
+  const handleGenerateReport = async () => {
+    setNotice("");
+    const ok = await loadReport();
+    if (!ok) return;
+    const label = reportTypes.find((r) => r.name === activeReport)?.label;
+    setNotice(`${label} generated at ${new Date().toLocaleTimeString()}`);
+    // On the fee report, open the invoice if a student row is already selected
+    if (activeReport === "fees" && selectedFee) setShowInvoice(true);
   };
 
-  const printInvoice = () => window.print();
+  const openInvoice = (fee) => {
+    setSelectedFee(fee);
+    setShowInvoice(true);
+  };
+
+  // "Save as PDF" in the print dialog uses the page title as the file name
+  const printInvoice = () => {
+    const previousTitle = document.title;
+    document.title = `Invoice-${selectedFee?.invoice_no || ""}`;
+    window.print();
+    document.title = previousTitle;
+  };
+
+  const exportCsv = () => {
+    const rows = filteredData;
+    if (!rows.length) {
+      setNotice("There is no data to export");
+      return;
+    }
+    const name = (r) => getFullName(r?.first_name, r?.last_name);
+    const due = (r) =>
+      parseFloat(r.amount || 0) -
+      parseFloat(r.discount || 0) -
+      parseFloat(r.paid_amount || 0);
+
+    const tables = {
+      students: [
+        ["Student ID", "Name", "Gender", "Class", "Phone", "Admission", "Status"],
+        (r) => [
+          r.student_id,
+          name(r),
+          r.gender,
+          r.Class?.name,
+          r.phone,
+          formatDate(r.admission_date),
+          r.status,
+        ],
+      ],
+      teachers: [
+        ["Teacher ID", "Name", "Specialization", "Department", "Phone", "Classes", "Status"],
+        (r) => [
+          r.teacher_id,
+          name(r),
+          r.specialization,
+          r.department,
+          r.phone,
+          r.Classes?.length || 0,
+          r.status,
+        ],
+      ],
+      fees: [
+        ["Invoice", "Student ID", "Student", "Fee Type", "Amount", "Discount", "Paid", "Due", "Status"],
+        (r) => [
+          r.invoice_no,
+          r.Student?.student_id,
+          name(r.Student),
+          r.fee_type,
+          r.amount,
+          r.discount || 0,
+          r.paid_amount || 0,
+          due(r),
+          r.status,
+        ],
+      ],
+      academic: [
+        ["Student ID", "Student", "Exam", "Subject", "Marks Obtained", "Total Marks", "Grade"],
+        (r) => [
+          r.Student?.student_id,
+          name(r.Student),
+          r.Exam?.name,
+          r.Subject?.name,
+          r.marks_obtained,
+          r.total_marks,
+          r.grade,
+        ],
+      ],
+      attendance: [
+        ["Date", "Student ID", "Student", "Class", "Status", "Remark"],
+        (r) => [
+          formatDate(r.date),
+          r.Student?.student_id,
+          name(r.Student),
+          r.Class?.name,
+          r.status,
+          r.remark,
+        ],
+      ],
+    };
+
+    const [header, toRow] = tables[activeReport];
+    const lines = [header, ...rows.map(toRow)].map((line) =>
+      line.map(csvCell).join(","),
+    );
+    // BOM so Excel opens Khmer / UTF-8 text correctly
+    const blob = new Blob(["﻿" + lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${activeReport}-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setNotice(`Exported ${rows.length} rows to CSV`);
+  };
 
   const getColumns = () => {
     switch (activeReport) {
@@ -336,7 +1148,7 @@ const Reports = () => {
           },
           {
             header: "Due",
-            accessor: "amount",
+            accessor: "due",
             render: (row) =>
               formatCurrency(
                 parseFloat(row.amount) -
@@ -351,6 +1163,19 @@ const Reports = () => {
               <span className={statusColor[row.status] || "badge-gray"}>
                 {row.status}
               </span>
+            ),
+          },
+          {
+            header: "Actions",
+            accessor: "actions",
+            render: (row) => (
+              <button
+                type="button"
+                className="btn-outline text-xs"
+                onClick={() => openInvoice(row)}
+              >
+                <FileText className="mr-1 h-3 w-3" /> Invoice
+              </button>
             ),
           },
         ];
@@ -458,7 +1283,7 @@ const Reports = () => {
         {reportTypes.map((report) => (
           <button
             key={report.name}
-            onClick={() => setActiveReport(report.name)}
+            onClick={() => selectReport(report.name)}
             className={`card p-4 text-left transition-colors ${
               activeReport === report.name
                 ? "ring-2 ring-primary-500"
@@ -537,15 +1362,17 @@ const Reports = () => {
               <select
                 className="input"
                 value={filters.status}
+                disabled={!statusOptions[activeReport]}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, status: e.target.value }))
                 }
               >
                 <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
+                {(statusOptions[activeReport] || []).map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
+                  </option>
+                ))}
               </select>
             </div>
           )}
@@ -561,16 +1388,36 @@ const Reports = () => {
               />
             </div>
           )}
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
-              className="btn-primary w-full"
+              className="btn-primary flex-1"
               onClick={handleGenerateReport}
+              disabled={loading}
             >
-              <FileText className="w-4 h-4 mr-1" /> Generate Report
+              <FileText className="w-4 h-4 mr-1" />{" "}
+              {loading ? "Generating..." : "Generate Report"}
+            </button>
+            <button
+              className="btn-outline flex-1"
+              onClick={exportCsv}
+              disabled={loading || !filteredData.length}
+            >
+              <Download className="w-4 h-4 mr-1" /> Export CSV
             </button>
           </div>
         </div>
       </div>
+
+      {loadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          Could not load this report: {loadError}
+        </div>
+      )}
+      {notice && !loadError && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          {notice}
+        </div>
+      )}
 
       {summaryCards}
 
@@ -658,7 +1505,7 @@ const Reports = () => {
                 className="btn-primary"
                 onClick={printInvoice}
               >
-                <Printer className="mr-1 h-4 w-4" /> Print Invoice
+                <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
               </button>
             </div>
           </div>
