@@ -1,3 +1,5 @@
+
+
 // import { useEffect, useState } from "react";
 // import {
 //   FileText,
@@ -7,6 +9,7 @@
 //   ClipboardList,
 //   CalendarDays,
 //   Printer,
+//   Download,
 //   X,
 // } from "lucide-react";
 // import { reportAPI, classAPI } from "../api";
@@ -54,6 +57,18 @@
 //   },
 // ];
 
+// // Status values each report can be filtered by (must match the database enums)
+// const statusOptions = {
+//   students: ["active", "inactive", "graduated", "transferred", "suspended"],
+//   teachers: ["active", "inactive", "on_leave", "resigned"],
+//   fees: ["pending", "partial", "paid", "overdue", "cancelled"],
+// };
+
+// const csvCell = (value) => {
+//   const text = value === null || value === undefined ? "" : String(value);
+//   return `"${text.replace(/"/g, '""')}"`;
+// };
+
 // const Reports = () => {
 //   const [activeReport, setActiveReport] = useState("students");
 //   const [data, setData] = useState([]);
@@ -69,6 +84,8 @@
 //   const [studentSearch, setStudentSearch] = useState("");
 //   const [selectedFee, setSelectedFee] = useState(null);
 //   const [showInvoice, setShowInvoice] = useState(false);
+//   const [loadError, setLoadError] = useState("");
+//   const [notice, setNotice] = useState("");
 
 //   useEffect(() => {
 //     loadClasses();
@@ -82,7 +99,16 @@
 //     setStudentSearch("");
 //     setSelectedFee(null);
 //     setShowInvoice(false);
+//     setNotice("");
+//     setLoadError("");
 //   }, [activeReport]);
+
+//   // Switch report and clear the status filter in one update, because a status
+//   // that is valid for one report (e.g. "paid") is invalid for another.
+//   const selectReport = (name) => {
+//     setActiveReport(name);
+//     setFilters((prev) => ({ ...prev, status: "" }));
+//   };
 
 //   const loadClasses = async () => {
 //     try {
@@ -95,6 +121,7 @@
 
 //   const loadReport = async () => {
 //     setLoading(true);
+//     setLoadError("");
 //     try {
 //       const params = { ...filters };
 //       if (!params.class_id) delete params.class_id;
@@ -141,8 +168,18 @@
 //         default:
 //           break;
 //       }
+//       return true;
 //     } catch (error) {
 //       console.error("Load report error:", error);
+//       setData([]);
+//       setSummary(null);
+//       setLoadError(
+//         error.response?.data?.error ||
+//           error.response?.data?.message ||
+//           error.message ||
+//           "Could not load the report",
+//       );
+//       return false;
 //     } finally {
 //       setLoading(false);
 //     }
@@ -160,19 +197,123 @@
 //         })
 //       : data;
 
-//   const handleGenerateReport = () => {
-//     if (activeReport === "fees") {
-//       if (!selectedFee) {
-//         alert("Please click a student name to select an invoice first");
-//         return;
-//       }
-//       setShowInvoice(true);
-//       return;
-//     }
-//     loadReport();
+//   const handleGenerateReport = async () => {
+//     setNotice("");
+//     const ok = await loadReport();
+//     if (!ok) return;
+//     const label = reportTypes.find((r) => r.name === activeReport)?.label;
+//     setNotice(`${label} generated at ${new Date().toLocaleTimeString()}`);
+//     // On the fee report, open the invoice if a student row is already selected
+//     if (activeReport === "fees" && selectedFee) setShowInvoice(true);
 //   };
 
-//   const printInvoice = () => window.print();
+//   const openInvoice = (fee) => {
+//     setSelectedFee(fee);
+//     setShowInvoice(true);
+//   };
+
+//   // "Save as PDF" in the print dialog uses the page title as the file name
+//   const printInvoice = () => {
+//     const previousTitle = document.title;
+//     document.title = `Invoice-${selectedFee?.invoice_no || ""}`;
+//     window.print();
+//     document.title = previousTitle;
+//   };
+
+//   const exportCsv = () => {
+//     const rows = filteredData;
+//     if (!rows.length) {
+//       setNotice("There is no data to export");
+//       return;
+//     }
+//     const name = (r) => getFullName(r?.first_name, r?.last_name);
+//     const due = (r) =>
+//       parseFloat(r.amount || 0) -
+//       parseFloat(r.discount || 0) -
+//       parseFloat(r.paid_amount || 0);
+
+//     const tables = {
+//       students: [
+//         ["Student ID", "Name", "Gender", "Class", "Phone", "Admission", "Status"],
+//         (r) => [
+//           r.student_id,
+//           name(r),
+//           r.gender,
+//           r.Class?.name,
+//           r.phone,
+//           formatDate(r.admission_date),
+//           r.status,
+//         ],
+//       ],
+//       teachers: [
+//         ["Teacher ID", "Name", "Specialization", "Department", "Phone", "Classes", "Status"],
+//         (r) => [
+//           r.teacher_id,
+//           name(r),
+//           r.specialization,
+//           r.department,
+//           r.phone,
+//           r.Classes?.length || 0,
+//           r.status,
+//         ],
+//       ],
+//       fees: [
+//         ["Invoice", "Student ID", "Student", "Fee Type", "Amount", "Discount", "Paid", "Due", "Status"],
+//         (r) => [
+//           r.invoice_no,
+//           r.Student?.student_id,
+//           name(r.Student),
+//           r.fee_type,
+//           r.amount,
+//           r.discount || 0,
+//           r.paid_amount || 0,
+//           due(r),
+//           r.status,
+//         ],
+//       ],
+//       academic: [
+//         ["Student ID", "Student", "Exam", "Subject", "Marks Obtained", "Total Marks", "Grade"],
+//         (r) => [
+//           r.Student?.student_id,
+//           name(r.Student),
+//           r.Exam?.name,
+//           r.Subject?.name,
+//           r.marks_obtained,
+//           r.total_marks,
+//           r.grade,
+//         ],
+//       ],
+//       attendance: [
+//         ["Date", "Student ID", "Student", "Class", "Status", "Remark"],
+//         (r) => [
+//           formatDate(r.date),
+//           r.Student?.student_id,
+//           name(r.Student),
+//           r.Class?.name,
+//           r.status,
+//           r.remark,
+//         ],
+//       ],
+//     };
+
+//     const [header, toRow] = tables[activeReport];
+//     const lines = [header, ...rows.map(toRow)].map((line) =>
+//       line.map(csvCell).join(","),
+//     );
+//     // BOM so Excel opens Khmer / UTF-8 text correctly
+//     const blob = new Blob(["﻿" + lines.join("\r\n")], {
+//       type: "text/csv;charset=utf-8;",
+//     });
+//     const url = URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.href = url;
+//     link.download = `${activeReport}-report-${new Date().toISOString().slice(0, 10)}.csv`;
+//     document.body.appendChild(link);
+//     link.click();
+//     link.remove();
+//     URL.revokeObjectURL(url);
+//     setNotice(`Exported ${rows.length} rows to CSV`);
+//   };
 
 //   const getColumns = () => {
 //     switch (activeReport) {
@@ -336,7 +477,7 @@
 //           },
 //           {
 //             header: "Due",
-//             accessor: "amount",
+//             accessor: "due",
 //             render: (row) =>
 //               formatCurrency(
 //                 parseFloat(row.amount) -
@@ -351,6 +492,19 @@
 //               <span className={statusColor[row.status] || "badge-gray"}>
 //                 {row.status}
 //               </span>
+//             ),
+//           },
+//           {
+//             header: "Actions",
+//             accessor: "actions",
+//             render: (row) => (
+//               <button
+//                 type="button"
+//                 className="btn-outline text-xs"
+//                 onClick={() => openInvoice(row)}
+//               >
+//                 <FileText className="mr-1 h-3 w-3" /> Invoice
+//               </button>
 //             ),
 //           },
 //         ];
@@ -458,7 +612,7 @@
 //         {reportTypes.map((report) => (
 //           <button
 //             key={report.name}
-//             onClick={() => setActiveReport(report.name)}
+//             onClick={() => selectReport(report.name)}
 //             className={`card p-4 text-left transition-colors ${
 //               activeReport === report.name
 //                 ? "ring-2 ring-primary-500"
@@ -537,15 +691,17 @@
 //               <select
 //                 className="input"
 //                 value={filters.status}
+//                 disabled={!statusOptions[activeReport]}
 //                 onChange={(e) =>
 //                   setFilters((prev) => ({ ...prev, status: e.target.value }))
 //                 }
 //               >
 //                 <option value="">All Status</option>
-//                 <option value="active">Active</option>
-//                 <option value="inactive">Inactive</option>
-//                 <option value="paid">Paid</option>
-//                 <option value="pending">Pending</option>
+//                 {(statusOptions[activeReport] || []).map((s) => (
+//                   <option key={s} value={s}>
+//                     {s.replace("_", " ").replace(/^\w/, (c) => c.toUpperCase())}
+//                   </option>
+//                 ))}
 //               </select>
 //             </div>
 //           )}
@@ -561,16 +717,36 @@
 //               />
 //             </div>
 //           )}
-//           <div className="flex items-end">
+//           <div className="flex items-end gap-2">
 //             <button
-//               className="btn-primary w-full"
+//               className="btn-primary flex-1"
 //               onClick={handleGenerateReport}
+//               disabled={loading}
 //             >
-//               <FileText className="w-4 h-4 mr-1" /> Generate Report
+//               <FileText className="w-4 h-4 mr-1" />{" "}
+//               {loading ? "Generating..." : "Generate Report"}
+//             </button>
+//             <button
+//               className="btn-outline flex-1"
+//               onClick={exportCsv}
+//               disabled={loading || !filteredData.length}
+//             >
+//               <Download className="w-4 h-4 mr-1" /> Export CSV
 //             </button>
 //           </div>
 //         </div>
 //       </div>
+
+//       {loadError && (
+//         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+//           Could not load this report: {loadError}
+//         </div>
+//       )}
+//       {notice && !loadError && (
+//         <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+//           {notice}
+//         </div>
+//       )}
 
 //       {summaryCards}
 
@@ -658,7 +834,7 @@
 //                 className="btn-primary"
 //                 onClick={printInvoice}
 //               >
-//                 <Printer className="mr-1 h-4 w-4" /> Print Invoice
+//                 <Printer className="mr-1 h-4 w-4" /> Print / Save as PDF
 //               </button>
 //             </div>
 //           </div>
@@ -669,7 +845,6 @@
 // };
 
 // export default Reports;
-
 
 import { useEffect, useState } from "react";
 import {
@@ -683,7 +858,7 @@ import {
   Download,
   X,
 } from "lucide-react";
-import { reportAPI, classAPI } from "../api";
+import { reportAPI, classAPI, assetUrl } from "../api";
 import Table from "../components/common/Table";
 import {
   formatDate,
@@ -998,7 +1173,7 @@ const Reports = () => {
                 <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden">
                   {row.photo ? (
                     <img
-                      src={`${API_URL.replace("/api", "")}/uploads/${row.photo}`}
+                      src={assetUrl(row.photo)}
                       alt={row.first_name}
                       className="w-full h-full object-cover"
                     />
@@ -1055,7 +1230,7 @@ const Reports = () => {
                 <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden">
                   {row.photo ? (
                     <img
-                      src={`${API_URL.replace("/api", "")}/uploads/${row.photo}`}
+                      src={assetUrl(row.photo)}
                       alt={row.first_name}
                       className="w-full h-full object-cover"
                     />
